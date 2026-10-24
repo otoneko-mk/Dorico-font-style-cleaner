@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self'; style-src 'self'; worker-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'"
+        />
+        <title>Dorico Style Cleaner</title>
+        <link rel="stylesheet" href="./style.css" />
+        <script type="module" src="./app.js"></script>
+    </head>
+    <body>
+        <main id="app">
+            <header class="title-bar">
+                <h1>Dorico Style Cleaner</h1>
+                <span class="version">ver.1.0.0</span>
+            </header>
+            <nav class="toolbar" aria-label="操作">
+                <button
+                    id="open"
+                    type="button"
+                    title="開く (Ctrl+O)"
+                    aria-keyshortcuts="Control+O Meta+O"
+                >
+                    開く…
+                </button>
+                <a
+                    id="save"
+                    class="button"
+                    role="button"
+                    aria-disabled="true"
+                    title="名前を付けて保存 (Ctrl+Shift+S)"
+                    aria-keyshortcuts="Control+S Meta+S Control+Shift+S Meta+Shift+S"
+                    >名前を付けて保存…</a
+                >
+                <span class="separator" aria-hidden="true"></span>
+                <button
+                    id="undo"
+                    type="button"
+                    class="icon-button"
+                    aria-label="元に戻す"
+                    title="元に戻す (Ctrl+Z)"
+                    aria-keyshortcuts="Control+Z Meta+Z"
+                    disabled
+                >
+                    <svg
+                        width="17"
+                        height="17"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M7 4 3 8l4 4M3 8h8a5 5 0 0 1 0 10"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </svg>
+                </button>
+                <button
+                    id="redo"
+                    type="button"
+                    class="icon-button"
+                    aria-label="やり直す"
+                    title="やり直す (Ctrl+Shift+Z / Ctrl+Y)"
+                    aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y"
+                    disabled
+                >
+                    <svg
+                        width="17"
+                        height="17"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="m13 4 4 4-4 4m4-4H9a5 5 0 0 0 0 10"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </svg>
+                </button>
+                <input
+                    id="file"
+                    class="visually-hidden"
+                    type="file"
+                    accept=".dorico"
+                    aria-label="Doricoファイル"
+                />
+                <span class="file-info"
+                    ><span id="filename"></span
+                    ><span id="modified" aria-label="未保存"></span
+                ></span>
+            </nav>
+            <section class="workspace" aria-label="スタイルの統合">
+                <div class="table-bar">
+                    <span class="source-label" id="source-label">統合元</span>
+                    <select id="kind" aria-label="スタイルの種類" disabled>
+                        <option value="font">フォントスタイル</option>
+                        <option value="paragraph">パラグラフスタイル</option>
+                    </select>
+                    <input
+                        id="search"
+                        type="search"
+                        placeholder="検索"
+                        aria-label="スタイルを検索"
+                        title="検索 (Ctrl+F)"
+                        aria-keyshortcuts="Control+F Meta+F"
+                        autocomplete="off"
+                        disabled
+                    />
+                </div>
+                <div
+                    id="source-list"
+                    class="table-wrap"
+                    tabindex="0"
+                    aria-labelledby="source-label"
+                    aria-keyshortcuts="Control+A Meta+A Escape"
+                >
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="check-column" aria-label="選択">
+                                    <input
+                                        id="select-all"
+                                        type="checkbox"
+                                        aria-label="統合元を全選択"
+                                        disabled
+                                    />
+                                </th>
+                                <th scope="col">スタイル</th>
+                                <th scope="col">ID</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sources"></tbody>
+                    </table>
+                    <div id="empty">ファイルを開いてください。</div>
+                </div>
+                <div class="destination-row">
+                    <label for="target">統合先</label>
+                    <select id="target" disabled>
+                        <option value="">統合先を選択</option>
+                    </select>
+                    <button
+                        id="merge"
+                        class="primary"
+                        type="button"
+                        title="統合 (Ctrl+Enter)"
+                        aria-keyshortcuts="Control+Enter Meta+Enter"
+                        disabled
+                    >
+                        統合
+                    </button>
+                </div>
+            </section>
+            <footer class="status-bar">
+                <span id="status" role="status" aria-live="polite"></span
+                ><span id="selection-count"></span
+                ><span class="copyright">© otoneko_mk</span>
+            </footer>
+        </main>
+    </body>
+</html>
