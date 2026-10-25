@@ -7,6 +7,33 @@ const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 const LIMIT = 2_000_000;
 const MARKER_PREFIXES = new Set([0x00, 0x30, 0x40, 0x60, 0xc0, 0xd0, 0xf0]);
 
+export const hasByteEscapes = text => /[\udc80-\udcff]/u.test(text);
+export function decodeValue(bytes) {
+  try { return decoder.decode(bytes); }
+  catch {
+    return Array.from(bytes, b => String.fromCharCode(b < 0x80 ? b : 0xdc00 + b)).join('');
+  }
+}
+export function encodeValue(text) {
+  if (typeof text !== 'string' || text.includes('\0')) throw new FormatError('文字列が不正です。');
+  const parts = []; let start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code >= 0xd800 && code <= 0xdbff) {
+      const next = text.charCodeAt(++i);
+      if (!(next >= 0xdc00 && next <= 0xdfff)) throw new FormatError('不正なサロゲートがあります。');
+    } else if (code >= 0xdc00 && code <= 0xdfff) {
+      if (code < 0xdc80 || code > 0xdcff) throw new FormatError('不正なサロゲートがあります。');
+      parts.push(encoder.encode(text.slice(start, i)), new Uint8Array([code - 0xdc00])); start = i + 1;
+    }
+  }
+  if (!parts.length) return encoder.encode(text);
+  parts.push(encoder.encode(text.slice(start)));
+  const result = new Uint8Array(parts.reduce((sum, p) => sum + p.length, 0)); let offset = 0;
+  for (const part of parts) { result.set(part, offset); offset += part.length; }
+  return result;
+}
+
 export class Writer {
   constructor() { this.buffer = new Uint8Array(1024); this.length = 0; }
   reserve(n) {
@@ -52,7 +79,7 @@ export class DTN {
       for (let i = 0; i < count; i++) {
         const end = data.indexOf(0, position);
         if (end < 0) throw new FormatError('文字列が終端されていません。');
-        try { result.push(decoder.decode(data.subarray(position, end))); }
+        try { result.push(label === 'values' ? decodeValue(data.subarray(position, end)) : decoder.decode(data.subarray(position, end))); }
         catch { throw new FormatError(`未対応の文字コードです：${label}[${i}] / offset 0x${position.toString(16)}`); }
         position = end + 1;
       }
@@ -140,7 +167,7 @@ export class DTN {
     const out = new Writer(); out.u32(4); out.u32(1);
     for (const table of [this.tags, this.values]) {
       out.u32(table.length);
-      for (const value of table) { out.bytes(encoder.encode(value)); out.byte(0); }
+      for (const value of table) { out.bytes(encodeValue(value)); out.byte(0); }
     }
     out.u32(this.nodes.length);
     for (const node of this.nodes) {

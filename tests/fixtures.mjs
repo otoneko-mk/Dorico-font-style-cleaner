@@ -41,13 +41,13 @@ const font = (id, parent = '') => node('FontStyleEntityDefinition', '', [field('
 const paragraph = (id, parent = '') => node('ParagraphStyleEntityDefinition', '', [field('name', id), field('entityID', id), field('parentEntityID', parent), node('paragraphStyle', '', [field('fontname', 'Example'), node('borderPadding', '', [field('left', '0')])])]);
 export function fixtureTrees() {
   const libraryChildren = () => [node('fileVersion', '1.1452'), node('fontstyles', '', [node('entities', '', [font('font.base'), font('font.A', 'font.base'), font('font.A1', 'font.A'), font('font.child', 'font.A1')], 0xc3)]),
-  node('paragraphStyles', '', [node('entities', '', [paragraph('paragraph.base'), paragraph('paragraph.A', 'paragraph.base'), paragraph('paragraph.B', 'paragraph.A'), paragraph('paragraph.child', 'paragraph.B')])]),
-  node('textDefinitions', '', [node('entities', '', [node('TextPrimitiveEntityDefinition', '', [field('name', 'm.font.A'), field('entityID', 'text.example'), field('fontStyle', 'font.A'), field('text', 'm')])])]),
-  node('paragraph', '', [node('paragraphStyleID', 'paragraph.A')]), node('barNumberLayoutOptions', '', [node('barNumbersParagraphStyle', 'paragraph.B')])];
+    node('paragraphStyles', '', [node('entities', '', [paragraph('paragraph.base'), paragraph('paragraph.A', 'paragraph.base'), paragraph('paragraph.B', 'paragraph.A'), paragraph('paragraph.child', 'paragraph.B')])]),
+    node('textDefinitions', '', [node('entities', '', [node('TextPrimitiveEntityDefinition', '', [field('name', 'm.font.A'), field('entityID', 'text.example'), field('fontStyle', 'font.A'), field('text', 'm')])])]),
+    node('paragraph', '', [node('paragraphStyleID', 'paragraph.A')]), node('barNumberLayoutOptions', '', [node('barNumbersParagraphStyle', 'paragraph.B')])];
   return { score: node('kScore', '', [node('fileVersion', '1.1452'), node('library', '', libraryChildren())]), library: node('kScoreLibrary', '', libraryChildren()) };
 }
 export function projectFixture({ mutateScore, descriptor = true } = {}) {
   const trees = fixtureTrees(); if (mutateScore) mutateScore(trees.score);
   return zipFixture([{ name: 'score.dtn', data: encodeTree(trees.score), descriptor }, { name: 'scorelibrary.dtn', data: encodeTree(trees.library) },
-  { name: 'supplementary_data/画像.bin', data: new Uint8Array([0, 128, 255, 12]), method: 0 }]);
+    { name: 'supplementary_data/画像.bin', data: new Uint8Array([0, 128, 255, 12]), method: 0 }]);
 }

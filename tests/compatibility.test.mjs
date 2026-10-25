@@ -23,7 +23,7 @@ function fixture(version, prefix = 0xf0) {
     tree.children.forEach(visit);
   };
   Object.values(trees).forEach(visit);
-  return zipFixture([{ name: 'score.dtn', data: encodeTree(trees.score) }, { name: 'scorelibrary.dtn', data: encodeTree(trees.library) }]);
+  return zipFixture([{name:'score.dtn',data:encodeTree(trees.score)}, {name:'scorelibrary.dtn',data:encodeTree(trees.library)}]);
 }
 test('observed versions support font and paragraph merges and saved reload', async () => {
   for (const version of SUPPORTED_VERSIONS) {

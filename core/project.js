@@ -1,4 +1,4 @@
-import { DTN, FormatError, equalBytes } from './dtn.js';
+import { DTN, FormatError, equalBytes, encodeValue, hasByteEscapes } from './dtn.js';
 import { ZipArchive } from './zip.js';
 
 export const STYLE_TYPES = Object.freeze({
@@ -23,6 +23,7 @@ function includesBytes(data, needle) {
   return false;
 }
 function encodings(value) {
+  if (hasByteEscapes(value)) return [encodeValue(value)];
   const little = new Uint8Array(value.length * 2), big = new Uint8Array(value.length * 2);
   for (let i = 0; i < value.length; i++) {
     const c = value.charCodeAt(i); little[i * 2] = c & 255; little[i * 2 + 1] = c >>> 8;
@@ -86,11 +87,17 @@ export class Project {
   }
   references(name, doc, sources, removed = new Set(), kind = 'font') {
     const styles = this.stylesFor(kind), parents = new Int32Array(doc.nodes.length).fill(-1), refs = [];
+    const sourceIDs = [...sources], needles = sourceIDs.map(encodeValue);
     doc.nodes.forEach((node, i) => { for (const child of node.children) parents[child] = i; });
     for (let i = 0; i < doc.nodes.length; i++) {
       if (removed.has(i)) continue;
       const value = doc.value(i), tag = doc.tag(i), node = doc.nodes[i];
-      if (!sources.has(value) && (styles.has(value) || ![...sources].some(source => value.includes(source)))) continue;
+      if (!sources.has(value)) {
+        if (styles.has(value)) continue;
+        const embedded = sourceIDs.some(source => value.includes(source));
+        const raw = !embedded && hasByteEscapes(value) ? encodeValue(value) : null;
+        if (!embedded && !(raw && needles.some(needle => includesBytes(raw, needle)))) continue;
+      }
       if (kind === 'font' && !node.children.length && parents[i] >= 0 && doc.tag(parents[i]) === 'TextPrimitiveEntityDefinition' && textFields.has(tag) && !(tag === 'entityID' && sources.has(value))) continue;
       if (!sources.has(value) || !STYLE_TYPES[kind].references.has(tag) || node.children.length) throw new FormatError(`未対応の参照：${name} / ${tag} / node ${i}`);
       refs.push([name, i, tag]);

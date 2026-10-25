@@ -1,23 +1,19 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { DTN, FormatError } from '../core/dtn.js';
+import { DTN, FormatError, encodeValue } from '../core/dtn.js';
 import { Project } from '../core/project.js';
 import { ZipArchive } from '../core/zip.js';
 
 const requireValue = (condition, message) => { if (!condition) throw new FormatError(message); };
-const string = v => typeof v === 'string' && !v.includes('\0') && new TextDecoder().decode(new TextEncoder().encode(v)) === v;
+const string = v => { try { encodeValue(v); return true; } catch { return false; } };
 
 export function decode(bytes) {
   const doc = new DTN(bytes);
-  return {
-    format: 'dorico-dtn-json-1', tags: doc.tags, values: doc.values,
-    nodes: doc.nodes.map((n, id) => ({
-      id, marker: `0x${n.marker.toString(16).padStart(2, '0')}`,
+  return { format: 'dorico-dtn-json-1', tags: doc.tags, values: doc.values,
+    nodes: doc.nodes.map((n, id) => ({id, marker: `0x${n.marker.toString(16).padStart(2, '0')}`,
       tag: doc.tag(id), value: doc.value(id), children: n.children,
-      tagIndex: n.tag, valueIndex: n.value
-    }))
-  };
+      tagIndex: n.tag, valueIndex: n.value})) };
 }
 export function encode(json) {
   requireValue(json?.format === 'dorico-dtn-json-1', '未対応のJSON形式です。');
@@ -47,7 +43,7 @@ export function encode(json) {
     requireValue(Array.isArray(n.children) && n.children.every(c => Number.isInteger(c) && ids.has(c)), `子ノードの参照が不正です：node ${n.id}`);
     const marker = Number(n.marker);
     requireValue((marker & 2) || !n.children.length, `子ノードを持てないmarkerです：node ${n.id}`);
-    return { marker, tag: intern('tags', n.tag, n.tagIndex), value: intern('values', n.value, n.valueIndex), children: n.children.map(c => ids.get(c)) };
+    return {marker, tag: intern('tags', n.tag, n.tagIndex), value: intern('values', n.value, n.valueIndex), children: n.children.map(c => ids.get(c))};
   });
   doc.validate(); const bytes = doc.encode(); new DTN(bytes); return bytes;
 }
