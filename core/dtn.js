@@ -5,6 +5,7 @@ export const equalBytes = (a, b) => a.length === b.length && a.every((v, i) => v
 const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 const LIMIT = 2_000_000;
+const MARKER_PREFIXES = new Set([0x00, 0x30, 0x40, 0x60, 0xc0, 0xd0, 0xf0]);
 
 export class Writer {
   constructor() { this.buffer = new Uint8Array(1024); this.length = 0; }
@@ -44,7 +45,7 @@ export class DTN {
       throw new FormatError('可変長整数が長すぎます。');
     };
     if (u32() !== 4 || u32() !== 1) throw new FormatError('未対応のDTNヘッダーです。');
-    const table = () => {
+    const table = label => {
       const count = u32();
       if (count > LIMIT) throw new FormatError('文字列辞書が大きすぎます。');
       const result = [];
@@ -52,17 +53,19 @@ export class DTN {
         const end = data.indexOf(0, position);
         if (end < 0) throw new FormatError('文字列が終端されていません。');
         try { result.push(decoder.decode(data.subarray(position, end))); }
-        catch { throw new FormatError('未対応の文字コードです。'); }
+        catch { throw new FormatError(`未対応の文字コードです：${label}[${i}] / offset 0x${position.toString(16)}`); }
         position = end + 1;
       }
       return result;
     };
-    this.tags = table(); this.values = table(); this.nodes = [];
+    this.tags = table('tags'); this.values = table('values'); this.nodes = [];
     const count = u32();
     if (count > LIMIT) throw new FormatError('ノード数が上限を超えています。');
     for (let i = 0; i < count; i++) {
-      const marker = byte();
-      if (marker < 0xc0 || marker > 0xc3) throw new FormatError('未対応のノード形式です。');
+      const offset = position, marker = byte();
+      if ((marker & 0x0c) || !MARKER_PREFIXES.has(marker & 0xf0)) {
+        throw new FormatError(`未対応のノード形式です：node ${i} / offset 0x${offset.toString(16)} / marker 0x${marker.toString(16).padStart(2, '0')}`);
+      }
       const tag = variable(), value = variable(), children = [];
       if (marker & 2) {
         const length = variable();

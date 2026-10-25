@@ -37,7 +37,7 @@ async function inflate(data, length) {
       parts.push(item.value);
     }
   } catch (error) {
-    await reader.cancel().catch(() => {});
+    await reader.cancel().catch(() => { });
     throw error instanceof FormatError ? error : new FormatError('ZIPを展開できません。');
   } finally { reader.releaseLock(); }
   return concat(parts);
@@ -80,8 +80,10 @@ export class ZipArchive {
       const dataStart = offset + headerLength;
       if (dataStart + compressed > start || u16(data, offset + 6) !== flags || u16(data, offset + 8) !== method) throw new FormatError('ZIPヘッダーが一致しません。');
       if (!equalBytes(data.subarray(offset + 30, offset + 30 + u16(data, offset + 26)), central.subarray(46, 46 + nameLength))) throw new FormatError('ZIP項目名が一致しません。');
-      const entry = { name, central, flags, method, compressed, uncompressed, crc: u32(central, 16), offset,
-        localHeader: data.slice(offset, dataStart), compressedData: data.subarray(dataStart, dataStart + compressed) };
+      const entry = {
+        name, central, flags, method, compressed, uncompressed, crc: u32(central, 16), offset,
+        localHeader: data.slice(offset, dataStart), compressedData: data.subarray(dataStart, dataStart + compressed)
+      };
       this.entries.push(entry); this.byName.set(name, entry); position += length;
     }
     if (position !== end || !count) throw new FormatError('ZIP索引のサイズが不正です。');

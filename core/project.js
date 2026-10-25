@@ -5,6 +5,7 @@ export const STYLE_TYPES = Object.freeze({
   font: { label: 'フォントスタイル', definition: 'FontStyleEntityDefinition', references: new Set(['fontStyle', 'fontStyleEntityID', 'parentEntityID']) },
   paragraph: { label: 'パラグラフスタイル', definition: 'ParagraphStyleEntityDefinition', references: new Set(['paragraphStyleID', 'barNumbersParagraphStyle', 'parentEntityID']) },
 });
+export const SUPPORTED_VERSIONS = new Set(['1.1299', '1.1301', '1.1392', '1.1416', '1.1417', '1.1444', '1.1449', '1.1450', '1.1452']);
 const textFields = new Set(['name', 'entityID', 'text']);
 const signature = (doc, root) => {
   const result = [], stack = [root];
@@ -38,12 +39,18 @@ export class Project {
   constructor(archive, data) {
     this.archive = archive; this.data = data; this.docs = new Map(); this.catalogs = new Map(); this.definitions = new Map();
     if (!data.has('score.dtn') || !data.has('scorelibrary.dtn')) throw new FormatError('必要なDTNファイルがありません。');
-    for (const [name, bytes] of data) if (name.endsWith('.dtn')) this.docs.set(name, new DTN(bytes));
+    for (const [name, bytes] of data) if (name.endsWith('.dtn')) {
+      try { this.docs.set(name, new DTN(bytes)); }
+      catch (error) {
+        if (error instanceof FormatError) throw new FormatError(`${name} / ${error.message}`);
+        throw error;
+      }
+    }
     this.library = this.docs.get('scorelibrary.dtn');
     if (this.library.tag(0) !== 'kScoreLibrary' || this.docs.get('score.dtn').tag(0) !== 'kScore') throw new FormatError('未対応のルート構造です。');
     for (const doc of this.docs.values()) {
       const versions = doc.nodes[0].children.filter(i => doc.tag(i) === 'fileVersion').map(i => doc.value(i));
-      if (versions.length !== 1 || versions[0] !== '1.1452') throw new FormatError('未対応の内部バージョンです。対応：1.1452');
+      if (versions.length !== 1 || !SUPPORTED_VERSIONS.has(versions[0])) throw new FormatError(`未対応の内部バージョンです：${versions.join(', ') || '不明'}。対応：${[...SUPPORTED_VERSIONS].join(', ')}`);
     }
     for (const [kind, type] of Object.entries(STYLE_TYPES)) {
       const definitions = new Map();
