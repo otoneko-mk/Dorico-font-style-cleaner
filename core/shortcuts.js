@@ -1,4 +1,7 @@
-export function shortcutAction(event, { editable = false, search = false, select = false } = {}) {
+export function shortcutAction(
+  event,
+  { editable = false, search = false, select = false } = {},
+) {
   if (event.isComposing || event.altKey) return null;
   const primary = event.ctrlKey || event.metaKey;
   const key = event.key.toLowerCase();
